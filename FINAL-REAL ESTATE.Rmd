@@ -1,0 +1,80 @@
+---
+title: "EXAM-REAL ESTATE DATA"
+author: "JOVIA BULYABA"
+date: "2026-05-06"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+#LOAD LIBRARIES
+
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+
+#LOOK AT DATA
+
+```{r}
+list.files()
+```
+
+```{r}
+df <-read.csv("Real estate.csv")
+head(df)
+summary(df)
+```
+
+#check for missing values
+
+```{r}
+sum(is.na(df))
+```
+
+```{r}
+boxplot(df$X3.distance.to.the.nearest.MRT.station,main = "Distance to MRT",ylab = "Distance")
+```
+
+```{r}
+# Calculate Q1, Q3 and IQR
+Q1 <- quantile(df$X3.distance.to.the.nearest.MRT.station, 0.25)
+Q3 <- quantile(df$X3.distance.to.the.nearest.MRT.station, 0.75)
+IQR_val <- Q3 - Q1
+
+# Remove outliers
+df_clean <- df %>% 
+  filter(X3.distance.to.the.nearest.MRT.station < Q3 + 1.5 * IQR_val)
+
+#  how many rows we have now
+nrow(df_clean)
+```
+
+```{r}
+ggplot(df_clean, aes(x = X3.distance.to.the.nearest.MRT.station, 
+                     y = Y.house.price.of.unit.area)) +
+  geom_point(color = "blue") +
+  labs(title = "Distance to MRT vs House Price",
+       x = "Distance to MRT Station",
+       y = "House Price per Unit Area")
+```
+
+#building the model
+```{r}
+model <- lm(Y.house.price.of.unit.area ~ X3.distance.to.the.nearest.MRT.station, 
+            data = df_clean)
+
+# See the results
+summary(model)
+```
+#ADDING REGRESSION 
+```{r}
+ggplot(df_clean, aes(x = X3.distance.to.the.nearest.MRT.station, 
+                     y = Y.house.price.of.unit.area)) +
+  geom_point(color = "blue") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(title = "Distance to MRT vs House Price",
+       x = "Distance to MRT Station",
+       y = "House Price per Unit Area")
+```
+

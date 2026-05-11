@@ -1,0 +1,82 @@
+---
+title: "LIFE EXPECTANCY"
+author: "JOVIA BULYABA"
+date: "2026-05-06"
+output: word_document
+---
+
+```{r}
+list.files()
+```
+
+```{r}
+df <- read.csv("Life Expectancy Data.csv")
+head(df)
+str(df)
+summary(df)
+```
+#LOAD PACKAGES
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+##MISSING VALUES
+```{r}
+sum(is.na(df))
+```
+#REMOVE MISSING VALUES
+```{r}
+df_clean <- na.omit(df)
+nrow(df_clean)
+```
+#CONVERT TO BINARY
+```{r}
+# Convert Status to binary (0 and 1)
+df_clean$Status <- ifelse(df_clean$Status == "Developed", 1, 0)
+
+# Check it worked
+table(df_clean$Status)
+```
+#VISUALIZATION
+```{r}
+ggplot(df_clean, aes(x = factor(Status), y = Adult.Mortality, 
+                     fill = factor(Status))) +
+  geom_boxplot() +
+  labs(title = "Adult Mortality by Country Status",
+       x = "Status (0 = Developing, 1 = Developed)",
+       y = "Adult Mortality") +
+  scale_fill_manual(values = c("red", "blue"),
+                    labels = c("Developing", "Developed"))
+```
+# CALCULATE Q1.Q3,IQR - REMOVING OUTLIERS
+```{r}
+Q1 <- quantile(df_clean$Adult.Mortality, 0.25)
+Q3 <- quantile(df_clean$Adult.Mortality, 0.75)
+IQR_val <- Q3 - Q1
+
+# Remove outliers
+df_clean <- df_clean %>%
+  filter(Adult.Mortality < Q3 + 1.5 * IQR_val & 
+         Adult.Mortality > Q1 - 1.5 * IQR_val)
+
+# Check rows remaining
+nrow(df_clean)
+
+```
+#MODEL TRAINING
+```{r}
+model <- glm(Status ~ Adult.Mortality,data=df_clean,family= binomial)
+summary(model)
+```
+```{r}
+ggplot(df_clean, aes(x = Adult.Mortality, y = Status)) +
+  geom_point(color = "blue", alpha = 0.3) +
+  geom_smooth(method = "glm", 
+              method.args = list(family = binomial),
+              color = "red", se = FALSE) +
+  labs(title = "Logistic Regression: Adult Mortality vs Status",
+       x = "Adult Mortality",
+       y = "Probability of Being Developed (1)")
+```
+##SUMMARY
+

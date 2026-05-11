@@ -1,0 +1,98 @@
+---
+title: "WORD CLOUD"
+author: "JOVIA BULYABA"
+date: "2026-05-07"
+output: word_document
+---
+
+#run libraries
+
+```{r}
+library(readxl)
+library(tidytext)
+library(wordcloud)
+library(syuzhet)
+library(reshape2)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+list.files()
+```
+```{r}
+df <- read.csv(  "WORD CLOUD .csv")
+head(df)
+```
+#MISSING VALUES
+```{r}
+sum(is.na(df))
+```
+#REMOVE STOP WORDS/CLEAN
+```{r}
+df_tokens <- df %>%
+  unnest_tokens(word, `Review.Text`) %>%
+  anti_join(stop_words)
+nrow(df_tokens)
+```
+#sentiment analysis
+```{r}
+sentiment_scores <- df_tokens %>%
+  inner_join(get_sentiments("bing"))
+
+# Count positive vs negative
+sentiment_summary <- sentiment_scores %>%
+  count(sentiment)
+
+print(sentiment_summary)
+```
+#visualizAtion
+```{r}
+ggplot(sentiment_summary, aes(x = sentiment, y = n, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("negative" = "red", "positive" = "green")) +
+  labs(title = "Sentiment Analysis of Clothing Reviews",
+       x = "Sentiment",
+       y = "Word Count")
+```
+#WORD CLOUD 
+
+```{r}
+word_counts <- df_tokens %>%
+  count(word, sort = TRUE)
+
+# Generate word cloud
+wordcloud(words = word_counts$word, 
+          freq = word_counts$n,
+          min.freq = 50,
+          max.words = 100,
+          colors = brewer.pal(8, "Dark2"))
+```
+## Get emotion scores
+```{r}
+#  sample of 5000 words 
+set.seed(123)
+sample_words <- df_tokens %>% 
+  sample_n(5000)
+
+# n emotion analysis on smaller sample
+emotions <- get_nrc_sentiment(sample_words$word)
+emotion_summary <- colSums(emotions)
+emotion_df <- data.frame(
+  emotion = names(emotion_summary),
+  count = emotion_summary
+)
+print(emotion_df)
+```
+#BAR CHART VISUALIZATION
+```{r}
+ggplot(emotion_df, aes(x = reorder(emotion, -count), 
+                        y = count, fill = emotion)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Emotion Recognition in Clothing Reviews",
+       x = "Emotion",
+       y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+#Summary of Findings
+Using the Women's Clothing E-Commerce Reviews dataset, sentiment analysis revealed that 75% of customer reviews were positive compared to 25% negative. The word cloud highlighted "dress", "love" and "size" as the most frequently mentioned words. Emotion recognition showed that trust and positive sentiment dominated, followed by joy and anticipation, while negative emotions like anger and disgust were minimal. Overall customers are highly satisfied with their purchases and trust the brand.
